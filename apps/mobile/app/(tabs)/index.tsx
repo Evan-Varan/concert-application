@@ -7,6 +7,15 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Link } from 'expo-router';
 
+//api test
+const API_URL = process.env.EXPO_PUBLIC_API_URL
+
+fetch(`${API_URL}/health`)
+  .then((res) => res.json())
+  .then((data) => console.log(data))
+  .catch((err) => console.error(err))
+
+
 export default function HomeScreen() {
   return (
     <ParallaxScrollView

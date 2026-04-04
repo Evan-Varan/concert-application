@@ -5,11 +5,14 @@
   "scripts": {
     "dev": "turbo start",
     "dev:mobile": "turbo -F mobile start",
-    "android": "turbo -F mobile android",
+    "dev:api": "turbo -F api dev",
+    "dev:native": "concurrently \"pnpm dev:api\" \"pnpm dev:mobile\"",
+    "dev:android": "concurrently \"pnpm dev:api\" \"pnpm --filter mobile android\"",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck"
   },
   "devDependencies": {
     "turbo": "^2.9.3"
   }
+  
 }
