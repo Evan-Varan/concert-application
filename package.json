@@ -1,0 +1,15 @@
+{
+  "name": "concert-application",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "turbo start",
+    "dev:mobile": "turbo -F mobile start",
+    "android": "turbo -F mobile android",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.9.3"
+  }
+}
