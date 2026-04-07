@@ -1,19 +1,18 @@
 import NavbarButton from "./navbarButton"
-import { Ionicons } from "@expo/vector-icons"
-import { useState } from "react"
 import { View } from "react-native"
+import { usePathname, useRouter } from "expo-router"
 
 export default function Navbar() {
-
-  const[activeButton, setActiveButton] = useState("Home");
+  const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <View className="flex flex-row">
-      <NavbarButton buttonText="Home" iconName="home-outline" onClick = {() => setActiveButton("Home")} activeButton = {activeButton} />
-      <NavbarButton buttonText="Discover" iconName="search-outline" onClick = {() => setActiveButton("Discover")} activeButton = {activeButton}/>
-      <NavbarButton buttonText="Tickets" iconName="ticket-outline" onClick = {() => setActiveButton("Tickets")} activeButton = {activeButton}/>
-      <NavbarButton buttonText="Groups" iconName="chatbubble-outline" onClick = {() => setActiveButton("Groups")} activeButton = {activeButton}/>
-      <NavbarButton buttonText="Profile" iconName="person-outline" onClick = {() => setActiveButton("Profile")} activeButton = {activeButton}/>
+      <NavbarButton buttonText="Home" iconName="home-outline" onClick = {() => router.push("/")} isActive = {pathname === "/"} />
+      <NavbarButton buttonText="Discover" iconName="search-outline" onClick = {() => router.push("/discover")} isActive = {pathname === "/discover"} />
+      <NavbarButton buttonText="Tickets" iconName="ticket-outline" onClick = {() => {}} isActive = {false} />
+      <NavbarButton buttonText="Groups" iconName="chatbubble-outline" onClick = {() => {}} isActive = {false} />
+      <NavbarButton buttonText="Profile" iconName="person-outline" onClick = {() => {}} isActive = {false} />
     </View>
   )
 }

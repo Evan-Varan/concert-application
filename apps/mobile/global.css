@@ -1,2 +1,19 @@
 @import "nativewind/theme";
 @import "tailwindcss";
+@import "./app/styles/themes.css";
+
+@theme inline {
+  --color-app-bg: var(--bg);
+  --color-app-bg-elevated: var(--bg-elevated);
+  --color-app-surface: var(--surface);
+  --color-app-surface-hover: var(--surface-hover);
+  --color-app-border: var(--border);
+  --color-app-text: var(--text);
+  --color-app-text-muted: var(--text-muted);
+  --color-app-primary: var(--primary);
+  --color-app-primary-hover: var(--primary-hover);
+  --color-app-primary-soft: var(--primary-soft);
+  --color-app-accent: var(--accent);
+  --color-app-danger: var(--danger);
+  --color-app-success: var(--success);
+}
