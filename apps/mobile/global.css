@@ -1,11 +1,16 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&display=swap");
 @import "nativewind/theme";
 @import "tailwindcss";
 @import "./app/styles/themes.css";
 
 @theme inline {
+  --font-app-sans: var(--font-sans);
+  --font-app-display: var(--font-display);
+  --font-app-mono: var(--font-mono);
   --color-app-bg: var(--bg);
   --color-app-bg-elevated: var(--bg-elevated);
   --color-app-surface: var(--surface);
+  --color-app-surface-strong: var(--surface-strong);
   --color-app-surface-hover: var(--surface-hover);
   --color-app-border: var(--border);
   --color-app-text: var(--text);
@@ -13,7 +18,23 @@
   --color-app-primary: var(--primary);
   --color-app-primary-hover: var(--primary-hover);
   --color-app-primary-soft: var(--primary-soft);
+  --color-app-primary-strong: var(--primary-strong);
+  --color-app-primary-foreground: var(--primary-foreground);
   --color-app-accent: var(--accent);
+  --color-app-accent-warm: var(--accent-warm);
+  --color-app-accent-cool: var(--accent-cool);
+  --color-app-secondary: var(--secondary);
+  --color-app-secondary-foreground: var(--secondary-foreground);
+  --color-app-muted: var(--muted);
+  --color-app-muted-foreground: var(--muted-foreground);
+  --color-app-input-background: var(--input-background);
   --color-app-danger: var(--danger);
   --color-app-success: var(--success);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
 }
