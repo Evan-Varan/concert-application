@@ -42,6 +42,56 @@ app.get('/health/db', async () => {
   }
 })
 
+app.get('/events', async (request) => {
+    const query = request.query as { city?: string };
+    const apiKey = process.env.TICKETMASTER_API_KEY
+
+    if(!apiKey){
+      return{
+        events: [],
+        error: 'TICKETMASTER_API_KEY is not set'
+      };
+    }
+
+    const ticketmasterUrl = new URL('https://app.ticketmaster.com/discovery/v2/events.json');
+     ticketmasterUrl.searchParams.set('apikey', apiKey);
+    ticketmasterUrl.searchParams.set('classificationName', 'music');
+    ticketmasterUrl.searchParams.set('city', 'Austin');
+    // ticketmasterUrl.searchParams.set('countryCode', 'US');
+    // ticketmasterUrl.searchParams.set('size', '10');
+
+    const response = await fetch(ticketmasterUrl);
+
+    if(!response.ok){
+      return{
+        events:[],
+        error:`Ticketmaster request failed with ${response.status}`,
+      };
+    }
+    
+     const data = await response.json();
+
+    const ticketmasterEvents = data._embedded?.events ?? [];
+
+    const events = ticketmasterEvents.map((event: any) => {
+      const venue = event._embedded?.venues?.[0];
+
+      return {
+        id: event.id,
+        artist: event.name,
+        venue: venue?.name ?? 'Unknown venue',
+        city: venue?.city?.name ?? 'Unknown city',
+        date: event.dates?.start?.dateTime ?? event.dates?.start?.localDate ?? '',
+        imageUrl: event.images?.[0]?.url ?? '',
+      };
+    });
+
+    return {
+      events,
+    };
+  });
+
+
 const start = async () => {
   try {
     await app.listen({ port, host: '0.0.0.0' })
