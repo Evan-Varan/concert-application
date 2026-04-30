@@ -1,10 +1,16 @@
 import { Fragment, useMemo, useState } from 'react';
 import { Image, Linking, Modal, Pressable, ScrollView, View } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import AppCard from '@/app/components/ui/app-card';
 import AppText from '@/app/components/ui/app-text';
 import { useThemeColor } from '@/hooks/use-theme-color';
+
+type TicketProviderLabel = 'Ticketmaster' | 'SeatGeek' | 'StubHub';
+
+const ticketmasterLogo = require('../../assets/brand/ticketmaster-logo.png') as ImageSourcePropType;
+const seatGeekLogo = require('../../assets/brand/seatgeek-logo.png') as ImageSourcePropType;
 
 interface ConcertCardTicketsPageProps {
   artist: string;
@@ -22,6 +28,42 @@ interface ConcertCardTicketsPageProps {
   stubHubUrl?: string | null;
   imageUrl: string;
 }
+
+const ticketProviderBrands: Record<
+  TicketProviderLabel,
+  {
+    accent: string;
+    background: string;
+    foreground: string;
+    logoSource?: ImageSourcePropType;
+    name: string;
+    note: string;
+  }
+> = {
+  Ticketmaster: {
+    accent: '#024DDF',
+    background: '#EAF1FF',
+    foreground: '#024DDF',
+    logoSource: ticketmasterLogo,
+    name: 'Ticketmaster',
+    note: 'Primary ticketing partner',
+  },
+  SeatGeek: {
+    accent: '#FF5B49',
+    background: '#FFF2F0',
+    foreground: '#181818',
+    logoSource: seatGeekLogo,
+    name: 'SeatGeek',
+    note: 'Compare marketplace seats',
+  },
+  StubHub: {
+    accent: '#5F5F5F',
+    background: 'transparent',
+    foreground: '#5F5F5F',
+    name: 'StubHub',
+    note: 'Resale marketplace',
+  },
+};
 
 function formatEventDate(date: string) {
   const eventDate = new Date(date);
@@ -90,12 +132,12 @@ export default function ConcertCardTicketsPage({
         : 'Status TBD';
   const ticketLinks = useMemo(
     () => [
-      ...(ticketUrl ? [{ label: 'Ticketmaster', url: ticketUrl }] : []),
+      ...(ticketUrl ? [{ label: 'Ticketmaster' as const, url: ticketUrl }] : []),
       {
-        label: 'SeatGeek',
+        label: 'SeatGeek' as const,
         url: buildSearchUrl('https://seatgeek.com/search?search=', artist, city),
       },
-      ...(stubHubUrl ? [{ label: 'StubHub', url: stubHubUrl }] : []),
+      ...(stubHubUrl ? [{ label: 'StubHub' as const, url: stubHubUrl }] : []),
     ],
     [artist, city, stubHubUrl, ticketUrl]
   );
@@ -247,20 +289,47 @@ export default function ConcertCardTicketsPage({
 
                 <View className="gap-3">
                   <AppText variant="sectionTitle">Buy Tickets</AppText>
-                  {ticketLinks.map((link) => (
-                    <Pressable
-                      accessibilityRole="link"
-                      className="flex-row items-center justify-between rounded-[14px] border border-app-border bg-app-bg-elevated px-4 py-3"
-                      key={link.label}
-                      onPress={() => openTicketLink(link.url)}
-                    >
-                      <View className="flex-row items-center gap-3">
-                        <Ionicons color={mutedColor} name="open-outline" size={18} />
-                        <AppText variant="bodyStrong">{link.label}</AppText>
-                      </View>
-                      <Ionicons color={mutedColor} name="chevron-forward" size={18} />
-                    </Pressable>
-                  ))}
+                  {ticketLinks.map((link) => {
+                    const brand = ticketProviderBrands[link.label];
+                    const branded = link.label !== 'StubHub';
+
+                    return (
+                      <Pressable
+                        accessibilityRole="link"
+                        className="flex-row items-center justify-between rounded-[14px] border border-app-border bg-app-bg-elevated px-4 py-3"
+                        key={link.label}
+                        onPress={() => openTicketLink(link.url)}
+                        style={{
+                          backgroundColor: branded ? brand.background : undefined,
+                          borderColor: branded ? brand.accent : undefined,
+                        }}
+                      >
+                        <View className="flex-1 flex-row items-center gap-3">
+                          <View className="h-10 w-28 items-start justify-center">
+                            {brand.logoSource ? (
+                              <Image
+                                accessibilityLabel={`${brand.name} logo`}
+                                accessibilityIgnoresInvertColors
+                                className="h-8 w-full"
+                                resizeMode="contain"
+                                source={brand.logoSource}
+                              />
+                            ) : (
+                              <AppText className="text-app-text-muted" variant="caption">
+                                {brand.name}
+                              </AppText>
+                            )}
+                          </View>
+                          <View className="flex-1 gap-0.5">
+                            <AppText style={{ color: branded ? brand.foreground : undefined }} variant="caption">
+                              {brand.note}
+                            </AppText>
+                          </View>
+                        </View>
+                        <Ionicons color={branded ? brand.accent : mutedColor} name="chevron-forward" size={18} />
+                      </Pressable>
+                    );
+                  })}
                 </View>
 
                 <View className="gap-3">

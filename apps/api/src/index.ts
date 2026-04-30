@@ -159,10 +159,48 @@ const getStubHubEventUrl = async (event: any) => {
   return matchingEvent?._links?.['event:webpage']?.href ?? null
 }
 
+const clampNumber = (value: unknown, fallback: number, min: number, max: number) => {
+  const parsedValue = Number(value)
+
+  if (!Number.isFinite(parsedValue)) {
+    return fallback
+  }
+
+  return Math.min(Math.max(Math.trunc(parsedValue), min), max)
+}
+
+const getBestEventImageUrl = (images: unknown) => {
+  if (!Array.isArray(images)) {
+    return ''
+  }
+
+  const rankedImages = images
+    .filter((image: any) => typeof image?.url === 'string')
+    .map((image: any) => {
+      const width = Number(image.width)
+      const height = Number(image.height)
+      const hasDimensions = Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0
+      const aspectRatio = hasDimensions ? width / height : 0
+      const area = hasDimensions ? width * height : 0
+      const isUsefulShape = aspectRatio >= 1.2 && aspectRatio <= 2.2
+
+      return {
+        area,
+        image,
+        score: area + (isUsefulShape ? 2_000_000 : 0),
+      }
+    })
+    .sort((first, second) => second.score - first.score)
+
+  return rankedImages[0]?.image.url ?? ''
+}
+
 app.get('/events', async (request) => {
-    const query = request.query as { city?: string };
+    const query = request.query as { city?: string; page?: string; size?: string };
     const apiKey = process.env.TICKETMASTER_API_KEY
     const city = query.city ?? 'Austin'
+    const page = clampNumber(query.page, 0, 0, 1000)
+    const size = clampNumber(query.size, 200, 1, 200)
 
     if(!apiKey){
       return{
@@ -178,8 +216,9 @@ app.get('/events', async (request) => {
     ticketmasterUrl.searchParams.set('latlong', '30.2672,-97.7431');
     ticketmasterUrl.searchParams.set('radius', '50');
     ticketmasterUrl.searchParams.set('unit', 'miles');
+    ticketmasterUrl.searchParams.set('page', String(page));
+    ticketmasterUrl.searchParams.set('size', String(size));
     // ticketmasterUrl.searchParams.set('countryCode', 'US');
-    // ticketmasterUrl.searchParams.set('size', '10');
 
     const response = await fetch(ticketmasterUrl);
 
@@ -193,6 +232,7 @@ app.get('/events', async (request) => {
      const data = await response.json();
 
     const ticketmasterEvents = data._embedded?.events ?? [];
+    const ticketmasterPage = data.page ?? {};
 
     const getBestPriceRange = (event: any) => {
       const priceRanges = Array.isArray(event.priceRanges) ? event.priceRanges : [];
@@ -275,12 +315,18 @@ app.get('/events', async (request) => {
         venueLongitude: Number.isFinite(venueLongitude) ? venueLongitude : null,
         ticketUrl: event.url ?? null,
         stubHubUrl,
-        imageUrl: event.images?.[0]?.url ?? '',
+        imageUrl: getBestEventImageUrl(event.images),
       };
     }));
 
     return {
       events,
+      page: {
+        number: ticketmasterPage.number ?? page,
+        size: ticketmasterPage.size ?? size,
+        totalElements: ticketmasterPage.totalElements ?? events.length,
+        totalPages: ticketmasterPage.totalPages ?? 1,
+      },
     };
   });
 

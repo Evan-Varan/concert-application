@@ -1,5 +1,6 @@
-import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
 import * as Location from 'expo-location';
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 
 import ConcertSectionHeader from '@/app/components/concert-section-header';
@@ -54,6 +55,16 @@ type UserLocation = {
   longitude: number;
 };
 
+type EventsPage = {
+  number: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
+const TICKETS_PAGE_SIZE = 50;
+const EVENTS_FETCH_SIZE = 200;
+
 function getDistanceMiles(from: UserLocation, to: UserLocation) {
   const earthRadiusMiles = 3958.8;
   const latitudeDelta = ((to.latitude - from.latitude) * Math.PI) / 180;
@@ -90,8 +101,57 @@ function FilterChip({
   );
 }
 
+function getVisiblePages(currentPage: number, totalPages: number) {
+  const firstPage = Math.max(1, currentPage - 2);
+  const lastPage = Math.min(totalPages, currentPage + 2);
+
+  return Array.from({ length: lastPage - firstPage + 1 }, (_, index) => firstPage + index);
+}
+
+function PaginationButton({
+  active = false,
+  disabled = false,
+  label,
+  onPress,
+}: {
+  active?: boolean;
+  disabled?: boolean;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      className={`h-10 min-w-10 items-center justify-center rounded-[12px] border px-3 ${
+        active
+          ? 'border-app-primary bg-app-primary'
+          : disabled
+            ? 'border-app-border bg-app-surface/50'
+            : 'border-app-border bg-app-surface'
+      }`.trim()}
+      disabled={disabled}
+      onPress={onPress}
+    >
+      <AppText
+        className={active ? 'text-app-bg-elevated' : disabled ? 'text-app-text-muted/50' : 'text-app-text'}
+        variant="bodyStrong"
+      >
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
+
 export default function TicketsScreen() {
   const [events, setEvents] = useState<TicketEvent[]>([]);
+  const [pageInfo, setPageInfo] = useState<EventsPage>({
+    number: 0,
+    size: EVENTS_FETCH_SIZE,
+    totalElements: 0,
+    totalPages: 1,
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const [eventsError, setEventsError] = useState<string | null>(null);
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [maxDistance, setMaxDistance] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
@@ -102,13 +162,56 @@ export default function TicketsScreen() {
   >('unknown');
 
   useEffect(() => {
-    const loadEvents = async () => {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/events`);
-      const data = await response.json();
+    let ignore = false;
 
-      setEvents(data.events);
+    const loadEvents = async () => {
+      setIsLoadingEvents(true);
+      setEventsError(null);
+
+      try {
+        const eventsUrl = new URL(`${process.env.EXPO_PUBLIC_API_URL}/events`);
+        eventsUrl.searchParams.set('page', '0');
+        eventsUrl.searchParams.set('size', String(EVENTS_FETCH_SIZE));
+
+        const response = await fetch(eventsUrl.toString());
+        const data = await response.json();
+
+        if (ignore) {
+          return;
+        }
+
+        if (!response.ok || data.error) {
+          setEvents([]);
+          setEventsError(data.error ?? 'Unable to load tickets.');
+          return;
+        }
+
+        setEvents(data.events ?? []);
+        setPageInfo(
+          data.page ?? {
+            number: 0,
+            size: EVENTS_FETCH_SIZE,
+            totalElements: data.events?.length ?? 0,
+            totalPages: 1,
+          },
+        );
+      } catch {
+        if (!ignore) {
+          setEvents([]);
+          setEventsError('Unable to load tickets.');
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingEvents(false);
+        }
+      }
     };
-    loadEvents();
+
+    void loadEvents();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const requestUserLocation = async () => {
@@ -217,6 +320,21 @@ export default function TicketsScreen() {
 
     return true;
   });
+  const totalPages = Math.max(Math.ceil(filteredEvents.length / TICKETS_PAGE_SIZE), 1);
+  const paginatedEvents = filteredEvents.slice(
+    (currentPage - 1) * TICKETS_PAGE_SIZE,
+    currentPage * TICKETS_PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [availability, maxDistance, maxPrice, selectedGenre]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const resetFilters = () => {
     setSelectedGenre('All');
@@ -224,6 +342,7 @@ export default function TicketsScreen() {
     setMaxPrice('');
     setAvailability('all');
   };
+  const visiblePages = getVisiblePages(currentPage, totalPages);
 
   return (
     <AppScreen scrollable>
@@ -316,11 +435,31 @@ export default function TicketsScreen() {
           </View>
 
           <AppText muted variant="caption">
-            Showing {filteredEvents.length} of {eventsWithDistance.length} events
+            Showing {paginatedEvents.length} of {filteredEvents.length} matching events from{' '}
+            {eventsWithDistance.length} loaded
+            {pageInfo.totalElements > eventsWithDistance.length ? ` of ${pageInfo.totalElements} available` : ''}
           </AppText>
         </AppCard>
 
-        {filteredEvents.map((event) => (
+        {isLoadingEvents && events.length === 0 ? (
+          <AppCard className="items-center gap-3">
+            <ActivityIndicator color="#4caf50" />
+            <AppText muted variant="caption">
+              Loading tickets
+            </AppText>
+          </AppCard>
+        ) : null}
+
+        {eventsError ? (
+          <AppCard className="items-center gap-2">
+            <AppText variant="bodyStrong">Tickets could not load.</AppText>
+            <AppText muted className="text-center" variant="caption">
+              {eventsError}
+            </AppText>
+          </AppCard>
+        ) : null}
+
+        {paginatedEvents.map((event) => (
           <ConcertCardTicketsPage
             key={event.id}
             artist={event.artist}
@@ -345,6 +484,50 @@ export default function TicketsScreen() {
             <AppText variant="bodyStrong">No tickets match those filters.</AppText>
             <AppText muted className="text-center" variant="caption">
               Try widening the distance, raising the price limit, or resetting filters.
+            </AppText>
+          </AppCard>
+        ) : null}
+
+        {filteredEvents.length > TICKETS_PAGE_SIZE ? (
+          <AppCard className="gap-4">
+            <View className="flex-row items-center justify-between gap-3">
+              <Pressable
+                className={`h-10 w-10 items-center justify-center rounded-[12px] border border-app-border bg-app-surface ${
+                  currentPage === 1 ? 'opacity-40' : ''
+                }`.trim()}
+                disabled={currentPage === 1 || isLoadingEvents}
+                onPress={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              >
+                <Ionicons color="#20221c" name="chevron-back" size={18} />
+              </Pressable>
+
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View className="flex-row gap-2 px-1">
+                  {visiblePages.map((page) => (
+                    <PaginationButton
+                      active={page === currentPage}
+                      disabled={isLoadingEvents}
+                      key={page}
+                      label={String(page)}
+                      onPress={() => setCurrentPage(page)}
+                    />
+                  ))}
+                </View>
+              </ScrollView>
+
+              <Pressable
+                className={`h-10 w-10 items-center justify-center rounded-[12px] border border-app-border bg-app-surface ${
+                  currentPage >= totalPages ? 'opacity-40' : ''
+                }`.trim()}
+                disabled={currentPage >= totalPages || isLoadingEvents}
+                onPress={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              >
+                <Ionicons color="#20221c" name="chevron-forward" size={18} />
+              </Pressable>
+            </View>
+
+            <AppText muted className="text-center" variant="caption">
+              Page {currentPage} of {totalPages}
             </AppText>
           </AppCard>
         ) : null}
