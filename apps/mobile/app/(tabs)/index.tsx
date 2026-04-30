@@ -1,4 +1,5 @@
 import { ScrollView, View } from 'react-native';
+import { useState, useEffect } from 'react';
 
 import ConcertForYouCard from '@/app/components/concert-for-you-card';
 import ConcertGroupPlanningCard from '@/app/components/concert-group-planning-card';
@@ -9,6 +10,7 @@ import ConcertTicketComparisonSection from '@/app/components/concert-ticket-comp
 import ConcertTrendingCard from '@/app/components/concert-trending-card';
 import AppScreen from '@/app/components/ui/app-screen';
 import AppText from '@/app/components/ui/app-text';
+import { useThemeToggle } from '@/contexts/theme-preference';
 
 const forYouEvents = [
   {
@@ -87,11 +89,34 @@ const trendingEvents = [
   },
 ] as const;
 
+
+
 export default function HomeScreen() {
+  const toggleTheme = useThemeToggle();
+  const [events, setEvents] = useState<
+    {
+      id: string;
+      artist: string;
+      venue: string;
+      city: string;
+      date: string;
+      imageUrl: string;
+    }[]
+    >([]);
+  
+  useEffect(() =>{
+    const loadEvents = async () => {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/events`);
+      const data = await response.json();
+  
+      setEvents(data.events);
+    };
+      loadEvents();
+    }, []);
   return (
     <AppScreen scrollable>
       <View className="gap-8">
-        <ConcertHomeHeader />
+        <ConcertHomeHeader onThemeToggle={toggleTheme} />
 
         <View className="gap-2">
           <AppText variant="sectionTitle">For You This Week</AppText>
@@ -104,8 +129,15 @@ export default function HomeScreen() {
           horizontal
           showsHorizontalScrollIndicator={false}
         >
-          {forYouEvents.map((event) => (
-            <ConcertForYouCard key={event.artist} {...event} />
+          {events.map((event) => (
+            <ConcertForYouCard 
+              key = {event.id}
+              artist = {event.artist}
+              venue = {event.venue}
+              imageUrl={event.imageUrl}
+              date = {event.date}
+              
+            />
           ))}
         </ScrollView>
 

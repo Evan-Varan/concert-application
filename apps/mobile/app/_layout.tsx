@@ -11,6 +11,7 @@ import { vars } from 'nativewind';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Colors, ThemeVariables } from '@/constants/theme';
+import { ThemePreferenceProvider } from '@/contexts/theme-preference';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
@@ -19,7 +20,7 @@ export const unstable_settings = {
 
 void SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayoutContent() {
   const colorScheme = useColorScheme() ?? 'light';
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -84,5 +85,13 @@ export default function RootLayout() {
         </View>
       </SafeAreaProvider>
     </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemePreferenceProvider>
+      <RootLayoutContent />
+    </ThemePreferenceProvider>
   );
 }

@@ -9,7 +9,10 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Concert uses your location to calculate distance to nearby venues."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,6 +31,12 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Concert uses your location to calculate distance to nearby venues."
+        }
+      ],
       [
         "expo-splash-screen",
         {

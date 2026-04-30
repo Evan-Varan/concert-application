@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ImageBackground, View } from 'react-native';
+import { ImageBackground, StyleSheet, View } from 'react-native';
 
 import AppBadge from '@/app/components/ui/app-badge';
 import AppText from '@/app/components/ui/app-text';
@@ -8,11 +8,11 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 interface ConcertForYouCardProps {
   artist: string;
   date: string;
-  distance: string;
+  distance?: string;
   featured?: boolean;
   friendsInterested?: readonly string[];
   imageUrl: string;
-  matchScore: number;
+  matchScore?: number;
   venue: string;
 }
 
@@ -34,15 +34,15 @@ export default function ConcertForYouCard({
       imageStyle={{ borderRadius: 24 }}
       source={{ uri: imageUrl }}
     >
-      <View className="absolute inset-0 rounded-[24px] bg-black/20" />
-      <View className="absolute inset-0 rounded-[24px] bg-black/35" />
+      <View style={[StyleSheet.absoluteFillObject, styles.overlaySoft]} />
+      <View style={[StyleSheet.absoluteFillObject, styles.overlayStrong]} />
       {featured ? (
-        <View className="absolute inset-0 rounded-[24px] bg-app-primary/10" />
+        <View style={[StyleSheet.absoluteFillObject, styles.overlayFeatured]} />
       ) : null}
       <View className="flex-1 justify-between p-5">
         <View className="flex-row items-start justify-between">
           <View className="flex-row items-center gap-1.5">
-            <Ionicons color={primaryColor} name="sparkles-outline" size={14} />
+            <Ionicons color={primaryColor} name="musical-notes-outline" size={20} />
             <AppBadge tone="match">{matchScore}% Match</AppBadge>
           </View>
 
@@ -50,7 +50,7 @@ export default function ConcertForYouCard({
             {friendsInterested?.slice(0, 3).map((friend) => (
               <View
                 key={friend}
-                className="h-8 w-8 items-center justify-center rounded-full border-2 border-white/20 bg-app-accent-warm"
+                className="h-8 w-8 items-center justify-center rounded-full border-2 border-white/20 bg-app-primary-strong"
                 style={{ shadowColor: '#000000', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } }}
               >
                 <AppText className="text-app-bg-elevated" variant="caption">
@@ -95,3 +95,18 @@ export default function ConcertForYouCard({
     </ImageBackground>
   );
 }
+
+const styles = StyleSheet.create({
+  overlaySoft: {
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: 24,
+  },
+  overlayStrong: {
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    borderRadius: 24,
+  },
+  overlayFeatured: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderRadius: 24,
+  },
+});
